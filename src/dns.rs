@@ -1,4 +1,5 @@
 use std::net::{Ipv4Addr, Ipv6Addr};
+use tabular::{Table, Row};
 
 pub struct Question {
     pub url: String,
@@ -139,25 +140,53 @@ pub struct DnsResult {
 
 impl DnsResult {
     pub fn log(&self) {
-        println!("QUESTION SECTION:");
-        println!("  {}\t{:?}\t{:?}", self.question.url, self.question.dns_class, self.question.dns_type);
+        let mut table = Table::new("{:<}    {:<}    {:<}    {:<}    {:<}");
 
-        println!("\nANSWER SECTION:");
+        table.add_heading("QUESTION SECTION:");
+        table.add_row(Row::new()
+            .with_cell(&self.question.url)
+            .with_cell(&"")
+            .with_cell(&format!("{:?}", self.question.dns_class))
+            .with_cell(&format!("{:?}", self.question.dns_type))
+            .with_cell(&"")
+        );
+
+        table.add_heading("\nANSWER SECTION:");
         for answer in &self.answers {
             let parsed_data = answer.parse_data();
-            println!("  {}\t{}\t{:?}\t{:?}\t{}", answer.name, answer.ttl, answer.record_class, answer.record_type, parsed_data);
+            table.add_row(Row::new()
+                .with_cell(&answer.name)
+                .with_cell(&format!("{}", answer.ttl))
+                .with_cell(&format!("{:?}", answer.record_class))
+                .with_cell(&format!("{:?}", answer.record_type))
+                .with_cell(&parsed_data)
+            );
         }
 
-        println!("\nAUTHORITY SECTION:");
+        table.add_heading("\nAUTHORITY SECTION:");
         for record in &self.authority_records {
             let parsed_data = record.parse_data();
-            println!("  {}\t{}\t{:?}\t{:?}\t{:?}", record.name, record.ttl, record.record_class, record.record_type, parsed_data);
+            table.add_row(Row::new()
+                .with_cell(&record.name)
+                .with_cell(&format!("{}", record.ttl))
+                .with_cell(&format!("{:?}", record.record_class))
+                .with_cell(&format!("{:?}", record.record_type))
+                .with_cell(&parsed_data)
+            );
         }
 
-        println!("\nADDITIONAL SECTION:");
+        table.add_heading("\nADDITIONAL SECTION:");
         for record in &self.additional_records {
             let parsed_data = record.parse_data();
-            println!("  {}\t{}\t{:?}\t{:?}\t{:?}", record.name, record.ttl, record.record_class, record.record_type, parsed_data);
+            table.add_row(Row::new()
+                .with_cell(&record.name)
+                .with_cell(&format!("{}", record.ttl))
+                .with_cell(&format!("{:?}", record.record_class))
+                .with_cell(&format!("{:?}", record.record_type))
+                .with_cell(&parsed_data)
+            );
         }
+
+        print!("{}", table);
     }
 }
