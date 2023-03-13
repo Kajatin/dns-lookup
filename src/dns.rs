@@ -7,6 +7,12 @@ pub struct Question {
     pub dns_class: DnsClass,
 }
 
+pub struct DnsServer {
+    pub name: String,
+    pub ip4: String,
+    pub ip6: String,
+}
+
 // https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-2
 #[derive(PartialEq, Debug)]
 pub enum DnsClass {

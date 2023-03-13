@@ -5,8 +5,8 @@ mod dns;
 fn main() {
     // Parse the domain name from the command line arguments
     let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        println!("Usage: dns_lookup <domain_name>");
+    if args.len() < 2 {
+        println!("Usage: dns_lookup <domain_name> <server_ip>");
         return;
     }
 
@@ -15,8 +15,17 @@ fn main() {
     // Create a UDP socket bound to any available local address
     let socket = UdpSocket::bind("0.0.0.0:0").expect("Could not bind socket");
 
+    // Parse the root servers from the CSV file
+    let root_servers = include_bytes!("root_servers.csv");
+    let root_servers = parse_root_servers(root_servers).unwrap();
+
     // Specify the DNS server address and port
-    let server_address: SocketAddr = "192.203.230.10:53".parse().unwrap();
+    let mut server_address: SocketAddr = format!("{}:53", root_servers[0].ip4.to_string()).parse().unwrap();
+
+    if args.len() > 2 {
+        let server_ip = &args[2];
+        server_address = format!("{}:53", server_ip).parse().unwrap();
+    }
 
     // Prepare the DNS query
     let id: u16 = 1234;
@@ -36,6 +45,25 @@ fn main() {
     // Parse the DNS response and print the IP addresses associated with the domain name
     let response = parse_dns_response(&response_buffer[..response_size], id).unwrap();
     response.log();
+}
+
+fn parse_root_servers(root_servers: &[u8]) -> Result<Vec<dns::DnsServer>, &'static str> {
+    let mut servers = Vec::new();
+
+    for line in root_servers.split(|&c| c == b'\n') {
+        let mut parts = line.split(|&c| c == b',');
+        let name = parts.next().unwrap();
+        let ip4 = parts.next().unwrap();
+        let ip6 = parts.next().unwrap();
+
+        let name = String::from_utf8_lossy(name).into_owned();
+        let ip4 = String::from_utf8_lossy(ip4).into_owned();
+        let ip6 = String::from_utf8_lossy(ip6).into_owned();
+
+        servers.push(dns::DnsServer { name, ip4, ip6 });
+    }
+
+    Ok(servers)
 }
 
 fn prepare_dns_query(domain_name: &str, id: u16) -> Vec<u8> {
